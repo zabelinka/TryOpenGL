@@ -15,6 +15,22 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 
+// Shaders
+const GLchar* vertexShaderSource = "#version 330 core\n"
+                                   "layout (location = 0) in vec3 position;\n"
+                                   "void main()\n"
+                                   "{\n"
+                                   "gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
+                                   "}\0";
+
+const GLchar* fragmentShaderSource = "#version 330 core\n"
+                                     "out vec4 color;\n"
+                                     "void main()\n"
+                                     "{\n"
+                                     "\tcolor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+                                     "}\0";
+
+
 int main()
 {
     //Инициализация GLFW
@@ -55,6 +71,80 @@ int main()
     glfwSetKeyCallback(window, key_callback);
 
 
+    // build a vertex shader
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+
+    // check if shader compiled without errors
+    GLint success;
+    GLchar infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if(!success) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+    }
+
+
+    // build a fragment shader
+    GLuint fragmentShader;
+    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+
+    // check fragment shader compilation errors
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if(!success) {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+    }
+
+
+    // create shader program
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    // check link errors
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        std::cerr << "ERROR::SHADER_PROGRAM::LINK_FAILED\n" << infoLog << std::endl;
+    }
+
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+
+
+
+    GLfloat vertices[] = {
+            -0.5f, -0.5f, 0.0f,
+            0.2f, -0.5f, 0.0f,
+            0.0f,  0.5f, 0.0f
+    };
+
+
+    GLuint VBO;
+    glGenBuffers(1, &VBO);
+
+    GLuint VAO;
+    glGenVertexArrays(1, &VAO);
+
+    // 1. Привязываем VAO
+    glBindVertexArray(VAO);
+    // 2. Копируем наш массив вершин в буфер для OpenGL
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    // 3. Устанавливаем указатели на вершинные атрибуты
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
+    //4. Отвязываем VAO
+    glBindVertexArray(0);
+
+
     while(!glfwWindowShouldClose(window)) {
         // Проверяем события и вызываем функции обратного вызова.
         glfwPollEvents();
@@ -62,6 +152,12 @@ int main()
         // Команды отрисовки здесь
         glClearColor(0.8f, 0.3f, 0.3f, 0.5f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+
+        glUseProgram(shaderProgram);
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
 
         // Меняем буферы местами
         glfwSwapBuffers(window);
