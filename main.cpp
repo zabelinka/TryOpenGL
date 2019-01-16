@@ -2,43 +2,18 @@
 #include <cmath>
 
 // GLEW нужно подключать до GLFW.
-// GLEW
-#define GLEW_STATIC
 #include <GL/glew.h>
-// GLFW
 #include <GLFW/glfw3.h>
+
+#include "Shader.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-    // Когда пользователь нажимает ESC, мы устанавливаем свойство WindowShouldClose в true,
-    // и приложение после этого закроется
+    // Когда пользователь нажимает ESC, мы устанавливаем свойство WindowShouldClose в true, и приложение закроется
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
 }
-
-// Shaders
-const GLchar* vertexShaderSource = "#version 330 core\n"
-                                   "layout (location = 0) in vec3 position;\n"
-                                   "layout (location = 1) in vec3 color;\n"
-                                   "\n"
-                                   "out vec3 ourColor;\n"
-                                   "\n"
-                                   "void main()\n"
-                                   "{\n"
-                                   "gl_Position = vec4(position, 1.0);\n"
-                                   "ourColor = color;\n"
-                                   "}\0";
-
-const GLchar* fragmentShaderSource = "#version 330 core\n"
-                                     "in vec3 ourColor;"
-                                     "out vec4 color;\n"
-                                     "\n"
-                                     "void main()\n"
-                                     "{\n"
-                                     "\tcolor = vec4(ourColor, 1.0f);\n"
-                                     "}\0";
-
 
 int main()
 {
@@ -80,62 +55,12 @@ int main()
     glfwSetKeyCallback(window, key_callback);
 
 
-    // build a vertex shader
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    // check if shader compiled without errors
-    GLint success;
-    GLchar infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if(!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-
-    // build a fragment shader
-    GLuint fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    // check fragment shader compilation errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if(!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-
-    // create shader program
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    // check link errors
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER_PROGRAM::LINK_FAILED\n" << infoLog << std::endl;
-    }
-
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-
-
-
     GLfloat vertices[] = {
             // Позиции         // Цвета
             0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // Нижний правый угол
             -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // Нижний левый угол
             0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // Верхний угол
     };
-
 
     GLuint VBO;
     glGenBuffers(1, &VBO);
@@ -159,6 +84,9 @@ int main()
     glBindVertexArray(0);
 
 
+    Shader ourShader("shaders/vertexShader.txt", "shaders/fragmentShader.txt");
+
+
     while(!glfwWindowShouldClose(window)) {
         // Проверяем события и вызываем функции обратного вызова.
         glfwPollEvents();
@@ -167,8 +95,10 @@ int main()
         glClearColor(0.8f, 0.3f, 0.3f, 0.5f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shaderProgram);
-        
+        ourShader.Use();
+
+        // glUniform1f(glGetUniformLocation(ourShader.getProgram(), "someUniform"), 1.0f);
+
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
@@ -176,9 +106,6 @@ int main()
         // Меняем буферы местами
         glfwSwapBuffers(window);
     }
-
-
-
 
     glfwTerminate();
     return 0;
