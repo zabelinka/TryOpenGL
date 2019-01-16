@@ -1,4 +1,6 @@
 #include <iostream>
+#include <cmath>
+
 // GLEW нужно подключать до GLFW.
 // GLEW
 #define GLEW_STATIC
@@ -18,16 +20,19 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 // Shaders
 const GLchar* vertexShaderSource = "#version 330 core\n"
                                    "layout (location = 0) in vec3 position;\n"
+                                   "\n"
                                    "void main()\n"
                                    "{\n"
-                                   "gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
+                                   "gl_Position = vec4(position, 1.0);\n"
                                    "}\0";
 
 const GLchar* fragmentShaderSource = "#version 330 core\n"
                                      "out vec4 color;\n"
+                                     "uniform vec4 ourColor;"
+                                     "\n"
                                      "void main()\n"
                                      "{\n"
-                                     "\tcolor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+                                     "\tcolor = ourColor;\n"
                                      "}\0";
 
 
@@ -154,7 +159,13 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
 
+        GLfloat timeValue = glfwGetTime();
+        GLfloat greenValue = (sin(timeValue) / 2) + 0.5;
+        GLint vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
         glUseProgram(shaderProgram);
+        glUniform4f(vertexColorLocation, 0.5f, greenValue, 0.6f, 1.0f);
+
+
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);
